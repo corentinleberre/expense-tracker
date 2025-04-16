@@ -14,7 +14,6 @@ import {
   Line,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   Area,
 } from "recharts";
@@ -137,7 +136,6 @@ export function YearlyExpensesCard({
                   }
                 }}
               >
-                <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="name"
                   height={40}

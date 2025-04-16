@@ -16,7 +16,6 @@ import {
   Line,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   Area,
 } from "recharts";
@@ -38,9 +37,9 @@ export function MonthlyExpensesCard({
   handlePeriodClick,
 }: MonthlyExpensesCardProps) {
   const [visibleMonthlyCount, setVisibleMonthlyCount] = useState(12);
-  
+
   const visibleMonthlyExpenses = monthlyExpenses.slice(0, visibleMonthlyCount);
-  
+
   const monthlyExpenseData = visibleMonthlyExpenses
     .map((item, index, array) => {
       // Convert full month name to 3-letter abbreviation with year
@@ -63,7 +62,7 @@ export function MonthlyExpensesCard({
       };
     })
     .reverse();
-    
+
   return (
     <Card className="md:col-span-1 lg:col-span-6">
       <CardHeader>
@@ -77,9 +76,7 @@ export function MonthlyExpensesCard({
                 <TableHead className="w-[100px]">Month</TableHead>
                 <TableHead className="w-[100px]">Year</TableHead>
                 <TableHead>Expenses</TableHead>
-                <TableHead className="w-[80px] text-center">
-                  Trend
-                </TableHead>
+                <TableHead className="w-[80px] text-center">Trend</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -90,9 +87,7 @@ export function MonthlyExpensesCard({
                       ? visibleMonthlyExpenses[index + 1].expenses
                       : null;
                   const isIncrease =
-                    prevExpense !== null
-                      ? expenses > prevExpense
-                      : false;
+                    prevExpense !== null ? expenses > prevExpense : false;
 
                   return (
                     <TableRow
@@ -100,12 +95,8 @@ export function MonthlyExpensesCard({
                       onClick={() => handlePeriodClick(period)}
                       className="cursor-pointer hover:bg-accent/50"
                     >
-                      <TableCell className="font-medium">
-                        {month}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {year}
-                      </TableCell>
+                      <TableCell className="font-medium">{month}</TableCell>
+                      <TableCell className="font-medium">{year}</TableCell>
                       <TableCell>
                         {expenses.toLocaleString("en-US", {
                           style: "currency",
@@ -129,9 +120,7 @@ export function MonthlyExpensesCard({
                             >
                               {isIncrease ? "+" : "-"}
                               {Math.abs(
-                                ((expenses - prevExpense) /
-                                  prevExpense) *
-                                  100
+                                ((expenses - prevExpense) / prevExpense) * 100
                               ).toFixed(1)}
                               %
                             </span>
@@ -149,7 +138,7 @@ export function MonthlyExpensesCard({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setVisibleMonthlyCount(prev => prev + 12)}
+                onClick={() => setVisibleMonthlyCount((prev) => prev + 12)}
                 className="text-muted-foreground"
               >
                 <Icons.more className="mr-2 h-4 w-4" />
@@ -182,7 +171,6 @@ export function MonthlyExpensesCard({
                   }
                 }}
               >
-                <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="name"
                   height={50}
@@ -192,10 +180,7 @@ export function MonthlyExpensesCard({
                   interval={0}
                   fontSize={10}
                 />
-                <YAxis
-                  tickFormatter={(value) => `$${value}`}
-                  width={60}
-                />
+                <YAxis tickFormatter={(value) => `$${value}`} width={60} />
                 <Tooltip
                   formatter={(value: number) => `$${value.toFixed(2)}`}
                   contentStyle={{
@@ -209,9 +194,7 @@ export function MonthlyExpensesCard({
                       const sign = percentChange >= 0 ? "+" : "";
                       // Since decrease in expenses is good, reverse the color logic
                       const changeClass =
-                        percentChange >= 0
-                          ? "text-red-600"
-                          : "text-green-600";
+                        percentChange >= 0 ? "text-red-600" : "text-green-600";
 
                       return (
                         <div className="p-3 bg-white shadow-md rounded-md">
@@ -255,4 +238,4 @@ export function MonthlyExpensesCard({
       </CardContent>
     </Card>
   );
-} 
+}

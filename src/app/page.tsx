@@ -81,6 +81,9 @@ export default function Home() {
   const [periodCategoryData, setPeriodCategoryData] = useState<
     { name: string; value: number }[]
   >([]);
+  const [periodAllCategories, setPeriodAllCategories] = useState<
+    { name: string; value: number }[]
+  >([]);
   const [open, setOpen] = useState(false);
   const [totalDebitsFromSearch, setTotalDebitsFromSearch] = useState(0);
 
@@ -101,6 +104,12 @@ export default function Home() {
     "#FF8042",
     "#8884d8",
     "#82ca9d",
+    "#a4de6c",
+    "#d0ed57",
+    "#ffc658",
+    "#ff7300",
+    "#8dd1e1",
+    "#a4262c",
   ];
 
   const parseCSV = useCallback(async (file: File) => {
@@ -305,8 +314,7 @@ export default function Home() {
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   const handlePeriodClick = (period: string) => {
-    setSelectedPeriod(period);
-    setOpen(true);
+    // Process the data first before opening the dialog
     const periodData = csvData.filter((item) => {
       if (!item.Date) return false;
       const itemDate = new Date(item.Date);
@@ -326,11 +334,34 @@ export default function Home() {
       }
     });
 
-    const chartData = Object.entries(categoryTotals).map(([name, value]) => ({
-      name,
-      value,
-    }));
-    setPeriodCategoryData(chartData);
+    // Convert to array and sort by value (highest first)
+    const sortedCategories = Object.entries(categoryTotals)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Store all categories for the table
+    const allCategories = [...sortedCategories];
+
+    // Take top 10 categories and group the rest as "Others" for the pie chart
+    let finalChartData;
+    if (sortedCategories.length > 10) {
+      const top10 = sortedCategories.slice(0, 10);
+      const othersValue = sortedCategories
+        .slice(10)
+        .reduce((acc, curr) => acc + curr.value, 0);
+
+      finalChartData = [...top10, { name: "Others", value: othersValue }];
+    } else {
+      finalChartData = sortedCategories;
+    }
+
+    // Set data first
+    setPeriodCategoryData(finalChartData);
+    setPeriodAllCategories(allCategories);
+    setSelectedPeriod(period);
+
+    // Then open dialog
+    setOpen(true);
   };
 
   const handleSort = (column: keyof Expense) => {
@@ -350,11 +381,35 @@ export default function Home() {
   };
 
   const monthlyExpenseData = monthlyExpenses
-    .map((item) => ({
-      name: `${item.month} ${item.year}`,
-      expenses: item.expenses,
-    }))
+    .map((item) => {
+      // Convert full month name to 3-letter abbreviation
+      const shortMonth = item.month.substring(0, 3);
+      return {
+        name: shortMonth,
+        expenses: item.expenses,
+        fullName: `${item.month} ${item.year}`,
+        year: item.year,
+      };
+    })
     .reverse();
+
+  // Group months by year for the x-axis
+  const yearGroups = monthlyExpenseData.reduce((acc, item) => {
+    if (!acc[item.year]) {
+      acc[item.year] = [];
+    }
+    acc[item.year].push(item);
+    return acc;
+  }, {} as Record<number, typeof monthlyExpenseData>);
+
+  // Calculate tick positions for year labels
+  const yearTickPositions = Object.entries(yearGroups).map(([year, months]) => {
+    const yearPosition = monthlyExpenseData.findIndex(
+      (item) => item.year === parseInt(year)
+    );
+    const centerPosition = yearPosition + Math.floor(months.length / 2);
+    return { year, position: centerPosition };
+  });
 
   const yearlyExpenseData = yearlyExpenses
     .map((item) => ({
@@ -369,6 +424,7 @@ export default function Home() {
     setYearlyExpenses([]);
     setSelectedPeriod(null);
     setPeriodCategoryData([]);
+    setPeriodAllCategories([]);
     setSearch("");
     setSortColumn(null);
     setCurrentPage(1);
@@ -450,13 +506,20 @@ export default function Home() {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="mt-auto pt-6">
+                <div className="pt-6">
                   <h3 className="text-lg font-semibold mb-3">Trend</h3>
-                  <div className="flex justify-end">
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={yearlyExpenseData}>
-                        <XAxis dataKey="name" />
-                        <YAxis tickFormatter={(value) => `$${value}`} />
+                  <div className="w-full h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={yearlyExpenseData}
+                        margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" height={40} />
+                        <YAxis
+                          tickFormatter={(value) => `$${value}`}
+                          width={80}
+                        />
                         <Tooltip
                           formatter={(value: number) => `$${value.toFixed(2)}`}
                         />
@@ -521,15 +584,72 @@ export default function Home() {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="mt-auto pt-6">
+                <div className="pt-6">
                   <h3 className="text-lg font-semibold mb-3">Trend</h3>
-                  <div className="flex justify-end">
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={monthlyExpenseData}>
-                        <XAxis dataKey="name" />
-                        <YAxis tickFormatter={(value) => `$${value}`} />
+                  <div className="w-full h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={monthlyExpenseData}
+                        margin={{ top: 5, right: 20, left: 20, bottom: 30 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="name"
+                          height={60}
+                          tickLine={false}
+                          tick={(props) => {
+                            const { x, y, payload } = props;
+                            const index = payload.index;
+                            const item = monthlyExpenseData[index];
+
+                            return (
+                              <g transform={`translate(${x},${y})`}>
+                                <text
+                                  x={0}
+                                  y={0}
+                                  dy={16}
+                                  textAnchor="middle"
+                                  fill="#666"
+                                  fontSize={12}
+                                >
+                                  {item.name}
+                                </text>
+                                {yearTickPositions.map((tick) => {
+                                  if (tick.position === index) {
+                                    return (
+                                      <text
+                                        key={tick.year}
+                                        x={0}
+                                        y={20}
+                                        dy={16}
+                                        textAnchor="middle"
+                                        fill="#666"
+                                        fontWeight="bold"
+                                        fontSize={12}
+                                      >
+                                        {tick.year}
+                                      </text>
+                                    );
+                                  }
+                                  return null;
+                                })}
+                              </g>
+                            );
+                          }}
+                        />
+                        <YAxis
+                          tickFormatter={(value) => `$${value}`}
+                          width={80}
+                        />
                         <Tooltip
                           formatter={(value: number) => `$${value.toFixed(2)}`}
+                          labelFormatter={(label, items) => {
+                            if (items && items.length > 0) {
+                              const index = items[0].payload.fullName;
+                              return index;
+                            }
+                            return label;
+                          }}
                         />
                         <Area
                           type="monotone"
@@ -554,20 +674,22 @@ export default function Home() {
           </div>
 
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="sm:max-w-[900px] sm:max-h-[600px] p-10 bg-card">
-              <DialogHeader>
+            <DialogContent className="sm:max-w-[900px] sm:max-h-[90vh] p-6 bg-card">
+              <DialogHeader className="text-left">
                 <DialogTitle className="text-2xl">
                   Category Breakdown for {selectedPeriod}
                 </DialogTitle>
               </DialogHeader>
               {selectedPeriod && periodCategoryData.length > 0 && (
-                <>
-                  <h3 className="text-lg font-semibold mb-3 text-center">
+                <div className="space-y-6 overflow-y-auto max-h-[70vh] pr-4">
+                  <h3 className="text-lg font-semibold mb-3">
                     Category Distribution
                   </h3>
-                  <div className="flex justify-end">
-                    <ResponsiveContainer width="100%" height={400}>
-                      <PieChart>
+                  <div className="w-full h-[400px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart
+                        margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+                      >
                         <Tooltip
                           formatter={(value: number) => `$${value.toFixed(2)}`}
                         />
@@ -576,23 +698,94 @@ export default function Home() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          outerRadius={160}
+                          outerRadius={130}
                           fill="#8884d8"
                           dataKey="value"
-                          label
+                          label={({ name, percent, index }) => {
+                            // Only show labels for the top 10 categories (index 0-9)
+                            if (index >= 10) return null;
+
+                            // Truncate long category names
+                            const displayName =
+                              name.length > 20
+                                ? `${name.substring(0, 18)}...`
+                                : name;
+                            return `${displayName}: ${(percent * 100).toFixed(
+                              0
+                            )}%`;
+                          }}
                         >
                           {periodCategoryData.map((entry, index) => (
                             <Cell
                               key={`cell-${index}`}
-                              fill={COLORS[index % COLORS.length]}
+                              fill={
+                                entry.name === "Others"
+                                  ? "#CCCCCC"
+                                  : COLORS[index % COLORS.length]
+                              }
                             />
                           ))}
                         </Pie>
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <Legend className="mt-12" />
-                </>
+
+                  <div className="text-base font-medium mt-4 mb-6 p-3 border-t border-b flex items-center gap-2">
+                    <span>Total Expenses:</span>
+                    <span className="text-lg font-bold">
+                      {periodAllCategories && periodAllCategories.length > 0
+                        ? periodAllCategories
+                            .reduce((sum, category) => sum + category.value, 0)
+                            .toLocaleString("en-US", {
+                              style: "currency",
+                              currency: "USD",
+                            })
+                        : "$0.00"}
+                    </span>
+                  </div>
+
+                  <h3 className="text-lg font-semibold mt-6 mb-3">
+                    Category Expenses
+                  </h3>
+                  <div className="rounded-md border max-h-[300px] overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Percentage</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {periodAllCategories
+                          .sort((a, b) => b.value - a.value)
+                          .map((item, index) => {
+                            const totalExpenses = periodAllCategories.reduce(
+                              (sum, category) => sum + category.value,
+                              0
+                            );
+                            const percentage =
+                              (item.value / totalExpenses) * 100;
+
+                            return (
+                              <TableRow key={index}>
+                                <TableCell className="font-medium">
+                                  {item.name}
+                                </TableCell>
+                                <TableCell>
+                                  {item.value.toLocaleString("en-US", {
+                                    style: "currency",
+                                    currency: "USD",
+                                  })}
+                                </TableCell>
+                                <TableCell>{percentage.toFixed(2)}%</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               )}
             </DialogContent>
           </Dialog>
@@ -627,7 +820,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <ScrollArea className="h-[400px] w-full rounded-md border">
+                <div className="w-full rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -707,7 +900,7 @@ export default function Home() {
                     </TableHeader>
                     <TableBody>
                       {currentItems.map((item, index) => (
-                        <TableRow key={index}>
+                        <TableRow key={index} className="h-[50px]">
                           <TableCell>
                             {item.Date?.toLocaleDateString()}
                           </TableCell>
@@ -720,7 +913,7 @@ export default function Home() {
                       ))}
                     </TableBody>
                   </Table>
-                </ScrollArea>
+                </div>
 
                 <Separator />
                 <div className="flex justify-between items-center py-4">
@@ -728,9 +921,12 @@ export default function Home() {
                     <Label htmlFor="items-per-page">Items per page:</Label>
                     <Select
                       value={String(itemsPerPage)}
-                      onValueChange={(value) => setItemsPerPage(Number(value))}
+                      onValueChange={(value) => {
+                        setItemsPerPage(Number(value));
+                        setCurrentPage(1); // Reset to first page on change
+                      }}
                     >
-                      <SelectTrigger id="items-per-page">
+                      <SelectTrigger id="items-per-page" className="w-[70px]">
                         <SelectValue placeholder={String(itemsPerPage)} />
                       </SelectTrigger>
                       <SelectContent>
@@ -738,6 +934,7 @@ export default function Home() {
                         <SelectItem value="10">10</SelectItem>
                         <SelectItem value="25">25</SelectItem>
                         <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -750,6 +947,10 @@ export default function Home() {
                     >
                       Previous
                     </Button>
+                    <span className="flex items-center mx-2">
+                      Page {currentPage} of{" "}
+                      {Math.ceil(sortedData.length / itemsPerPage)}
+                    </span>
                     <Button
                       onClick={() => paginate(currentPage + 1)}
                       disabled={indexOfLastItem >= sortedData.length}

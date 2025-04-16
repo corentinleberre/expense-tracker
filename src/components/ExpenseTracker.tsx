@@ -50,6 +50,12 @@ export default function ExpenseTracker() {
     clearDemoData();
     clearExpenseData();
     setUploadedData([]);
+
+    // Redirect to root page without demo param when in demo mode
+    if (isDemo && pathname) {
+      // Force navigation to the base URL without query parameters
+      window.location.href = pathname;
+    }
   };
 
   const handleFileUploadWrapper = (

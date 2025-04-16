@@ -31,11 +31,12 @@ export function InfoBanner({
             size="sm"
             className="whitespace-nowrap text-blue-600 border-blue-300 bg-transparent hover:bg-blue-100"
             onClick={() => {
-              if (router && pathname) {
-                router.replace(pathname);
-              }
               if (onExit) {
                 onExit();
+              }
+              if (pathname) {
+                // Force navigation to the base URL without query parameters
+                window.location.href = pathname;
               }
             }}
           >

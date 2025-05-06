@@ -20,6 +20,12 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.svg",
   },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 };
 
 export default function RootLayout({
@@ -31,6 +37,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head suppressHydrationWarning>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -43,7 +53,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Header />
-          <main className="mx-auto max-w-screen-2xl px-4">{children}</main>
+          <main className="mx-auto max-w-screen-2xl px-4 pt-16">
+            {children}
+          </main>
         </ThemeProvider>
       </body>
     </html>

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Icons } from "@/components/icons";
 import { MonthlyExpensesCard } from "@/components/MonthlyExpensesCard";
 import { YearlyExpensesCard } from "@/components/YearlyExpensesCard";
 import { CategoryBreakdownDialog } from "@/components/CategoryBreakdownDialog";
@@ -67,12 +66,7 @@ export default function ExpenseTracker() {
   const hasData = combinedData.length > 0;
 
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-5 flex items-center">
-        <Icons.dollarSign className="mr-2 h-6 w-6" />
-        Expense Tracker
-      </h1>
-
+    <div className="py-10">
       {isDemo && (
         <InfoBanner
           type="demo"

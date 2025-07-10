@@ -40,7 +40,6 @@ export default function ExpenseTracker() {
     periodAllCategories,
     open,
     setOpen,
-    totalDebitsFromSearch,
     handlePeriodClick,
     clearData: clearExpenseData,
   } = useExpenseData(combinedData);
@@ -116,7 +115,6 @@ export default function ExpenseTracker() {
 
           <TransactionDetails
             csvData={combinedData}
-            totalDebitsFromSearch={totalDebitsFromSearch}
           />
         </>
       )}

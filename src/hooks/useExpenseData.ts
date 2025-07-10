@@ -14,7 +14,6 @@ export function useExpenseData(data: Expense[]) {
     { name: string; value: number }[]
   >([]);
   const [open, setOpen] = useState(false);
-  const [totalDebitsFromSearch, setTotalDebitsFromSearch] = useState(0);
 
   // Calculate expenses by month and year
   useEffect(() => {
@@ -120,31 +119,6 @@ export function useExpenseData(data: Expense[]) {
     setYearlyExpenses(newYearlyExpenses);
   }, [data]);
 
-  // Get filtered data and calculate total debits
-  useEffect(() => {
-    // Get all data (no filtering applied here)
-    const filteredData = data.filter((item) => {
-      const searchableFields = [
-        item.Date?.toLocaleDateString(),
-        item["Numero de Carte"],
-        item.Description,
-        item.Categorie,
-        item.Debit?.toFixed(2),
-        item.Credit?.toFixed(2),
-      ];
-      return searchableFields.some((field) =>
-        field?.toLowerCase().includes("")
-      );
-    });
-
-    // Calculate total debits from search
-    const totalDebits = filteredData.reduce(
-      (sum, item) => sum + (item.Debit || 0),
-      0
-    );
-    setTotalDebitsFromSearch(totalDebits);
-  }, [data]);
-
   const handlePeriodClick = (period: string) => {
     // Process the data first before opening the dialog
     const periodData = data.filter((item) => {
@@ -212,7 +186,6 @@ export function useExpenseData(data: Expense[]) {
     periodAllCategories,
     open,
     setOpen,
-    totalDebitsFromSearch,
     handlePeriodClick,
     clearData,
   };

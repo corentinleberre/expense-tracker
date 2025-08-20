@@ -37,12 +37,10 @@ export interface Expense {
 
 interface TransactionDetailsProps {
   csvData: Expense[];
-  totalDebitsFromSearch: number;
 }
 
 export function TransactionDetails({
   csvData,
-  totalDebitsFromSearch,
 }: TransactionDetailsProps) {
   const [search, setSearch] = useState("");
   const [sortColumn, setSortColumn] = useState<keyof Expense | null>(null);
@@ -64,6 +62,12 @@ export function TransactionDetails({
       field?.toLowerCase().includes(search.toLowerCase())
     );
   });
+
+  // Calculate total debits from filtered data
+  const filteredTotalDebits = filteredData.reduce(
+    (sum, item) => sum + (item.Debit || 0),
+    0
+  );
 
   const sortedData = [...filteredData].sort((a, b) => {
     if (!sortColumn) return 0;
@@ -113,7 +117,7 @@ export function TransactionDetails({
               </p>
               <p>
                 <strong>Total Debits:</strong>{" "}
-                {totalDebitsFromSearch.toLocaleString("en-US", {
+                {filteredTotalDebits.toLocaleString("en-US", {
                   style: "currency",
                   currency: "USD",
                 })}
